@@ -4,8 +4,8 @@
  * 1. C Language
  * 2. Multithread
  *
- * gcc -o webserver webserver.c
- * ./webserver
+ * gcc -o server server.c
+ * ./server
  *
  */
 
@@ -20,7 +20,6 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#define THREAD_SIZE 5
 #define CHECK "\r\n"
 #define CHECK_SIZE 2
 
@@ -60,10 +59,6 @@ int main(int argc, char *argv[]) {
             error("fail on fork");
         if (pid == 0) {
             close(socket_connection);
-            pthread_t thread ;
-            int ret_pthread = pthread_create(&thread, NULL, (void *)&connection, (void *) new_socket_connection);
-            
-
             connection(new_socket_connection);
             exit(0);
         } else
@@ -74,7 +69,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void connection(int socket_connection) {
+int connection(int socket_connection) {
     int get_request(int fd, char *buffer) ;
     void send_error(int socket_connection) ;
     void send_ok(int socket_connection) ;
@@ -96,8 +91,7 @@ void connection(int socket_connection) {
             FILE *fp = fopen("index.html","r") ;
             send_ok(socket_connection) ;
             send_page(socket_connection, fp) ;
-            return ;
-    //        return 1;
+            return 1;
         }
         int len = strlen(ptr) ;
         char tmp[strlen(ptr)];
@@ -111,8 +105,7 @@ void connection(int socket_connection) {
             send_ok(socket_connection) ;
         send_page(socket_connection, fp) ;
     }
-    return ;
-    //return 1;
+    return 1;
 }
 
 void send_ok(int socket_connection){
