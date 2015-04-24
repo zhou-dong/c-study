@@ -27,7 +27,7 @@
 int main(int argc, char *argv[]) {
 
     void error(const char *msg) ;
-    int connection(int socket_connection) ; 
+    void connection(int socket_connection) ; 
     struct sockaddr_in serve_address, client_address ;
     socklen_t client_length ;
     int socket_connection ;
@@ -61,10 +61,10 @@ int main(int argc, char *argv[]) {
         if (pid == 0) {
             close(socket_connection);
             pthread_t thread ;
-            int ret_pthread = pthread_create(&thread, NULL, (void *)&connection, (void *) new_socket_connection);
-            
-
-            connection(new_socket_connection);
+            int r = pthread_create(&thread, NULL, (void *)&connection,  (void *) (int)new_socket_connection);
+            printf("%d\n", r) ;
+            int t = pthread_join(thread, new_socket_connection) ;
+            printf ("%d\n", t) ;
             exit(0);
         } else
             close(new_socket_connection) ;
