@@ -24,11 +24,8 @@
 #define CHECK "\r\n"
 #define CHECK_SIZE 2
 
-
 struct message {
     int socket_connection;
-    struct sockaddr * client_address;
-    socklen_t *client_length;
 } ;
 
 int main(int argc, char *argv[]) {
@@ -40,7 +37,6 @@ int main(int argc, char *argv[]) {
     socklen_t client_length ;
     int socket_connection ;
     int port_number = 8080 ;
-    int pid ;
     printf("begin to start server\n") ;
 
     socket_connection = socket(AF_INET, SOCK_STREAM, 0);
@@ -60,9 +56,8 @@ int main(int argc, char *argv[]) {
 
     while (1) {
         pthread_t thread ;
-        struct message m = { } ;
-        int r = pthread_create(&thread, NULL, (void *)&connection,  (void *) &m);
-       // int t = pthread_join(thread, new_socket_connection) ;
+        struct message m = { .socket_connection = socket_connection } ;
+        pthread_create(&thread, NULL, (void *)&thread_execute,  (void *) &m);
     }
 
     close(socket_connection);
@@ -70,9 +65,12 @@ int main(int argc, char *argv[]) {
 }
 
 void thread_execute(struct message *m){
+    struct sockaddr_in client_address ;
+    socklen_t client_length ;
+    client_length = sizeof(client_address);
     int connection(int socket_connection) ;
     void error(const char *msg) ;
-    int new_socket_connection = accept(m->socket_connection, (struct sockaddr *) m->client_address, m->client_length);
+    int new_socket_connection = accept(m->socket_connection, (struct sockaddr *) &client_address, &client_length);
     if (new_socket_connection < 0)
         error("faild on accept");
     int pid = fork();
@@ -84,6 +82,7 @@ void thread_execute(struct message *m){
         exit(0);
     } else
         close(new_socket_connection) ;
+    pthread_exit(NULL);
 }
 
 int connection(int socket_connection) {
