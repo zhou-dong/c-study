@@ -1,8 +1,8 @@
 /*
  * Multithreaded Http webserver By C language
  *
- * gcc -o webserver webserver.c
- * ./webserver
+ * gcc -o server server.c
+ * ./server
  *
  * default page  : index.html
  * page not found: 404.html
