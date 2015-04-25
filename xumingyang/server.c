@@ -31,6 +31,12 @@ struct message {
     int socket_fd;
 } ;
 
+void error(const char *msg)
+{
+    perror(msg);
+    exit(1);
+}
+
 void error(const char *msg) ;
 void run_thread(struct message *m) ;
 int handler_request(int socket_connection) ;
@@ -75,7 +81,6 @@ int main(int argc, char *argv[])
     close(socket_fd);
     return 0;
 }
-
 
 int handler_request(int socket_connection) {
     char request[500], *ptr, result[1000];
@@ -152,7 +157,6 @@ void run_thread(struct message *info)
     pthread_exit(NULL);
 }
 
-
 void ok_header(int socket_fd)
 {
     char *message_one = "HTTP/1.1 200 OK\r\n" ;
@@ -200,10 +204,4 @@ int get_request(int fd, char *buffer)
         point ++ ;
     }
     return (0) ;
-}
-
-void error(const char *msg)
-{
-    perror(msg);
-    exit(1);
 }
