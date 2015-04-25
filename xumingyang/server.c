@@ -24,9 +24,8 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#define THREAD_SIZE 5
-#define CHECK "\r\n"
-#define CHECK_SIZE 2
+#define EOF_CHECK "\r\n"
+#define EOF_SIZE 2
 
 struct message {
     int socket_fd;
@@ -35,6 +34,10 @@ struct message {
 void error(const char *msg) ;
 void run_thread(struct message *m) ;
 int handler_request(int socket_connection) ;
+int get_request(int fd, char *buffer) ;
+void no_found_header(int socket_connection) ;
+void ok_header(int socket_connection) ;
+void page_content(int socket_connection, FILE *fp); 
 
 int main(int argc, char *argv[]) 
 {
@@ -73,38 +76,6 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void run_thread(struct message *info)
-{
-    struct sockaddr_in client_address ;
-    socklen_t client_length ;
-    client_length = sizeof(client_address);
-    void error(const char *msg) ;
-    int new_socket_fd = accept(info->socket_fd, (struct sockaddr *) &client_address, &client_length);
-    if (new_socket_fd < 0)
-    {
-        error("error on accept new socket!");
-    }
-    int pid = fork();
-    if (pid < 0) 
-    {
-        error("error on on fork");
-    }
-    if (pid == 0) {
-        close(info->socket_fd);
-        handler_request(new_socket_fd);
-        exit(0);
-    }
-    else
-    {
-        close(new_socket_fd) ;
-    }
-    pthread_exit(NULL);
-}
-
-int get_request(int fd, char *buffer) ;
-void no_found_header(int socket_connection) ;
-void ok_header(int socket_connection) ;
-void page_content(int socket_connection, FILE *fp); 
 
 int handler_request(int socket_connection) {
     char request[500], *ptr, result[1000];
@@ -153,6 +124,35 @@ int handler_request(int socket_connection) {
     return 1;
 }
 
+void run_thread(struct message *info)
+{
+    struct sockaddr_in client_address ;
+    socklen_t client_length ;
+    client_length = sizeof(client_address);
+    void error(const char *msg) ;
+    int new_socket_fd = accept(info->socket_fd, (struct sockaddr *) &client_address, &client_length);
+    if (new_socket_fd < 0)
+    {
+        error("error on accept new socket!");
+    }
+    int pid = fork();
+    if (pid < 0) 
+    {
+        error("error on on fork");
+    }
+    if (pid == 0) {
+        close(info->socket_fd);
+        handler_request(new_socket_fd);
+        exit(0);
+    }
+    else
+    {
+        close(new_socket_fd) ;
+    }
+    pthread_exit(NULL);
+}
+
+
 void ok_header(int socket_fd)
 {
     char *message_one = "HTTP/1.1 200 OK\r\n" ;
@@ -184,12 +184,12 @@ int get_request(int fd, char *buffer)
     int match_check = 0;
     while (recv(fd, point, 1, 0) != 0)
     {
-        if (*point == CHECK[match_check])
+        if (*point == EOF_CHECK[match_check])
         {
             ++match_check ; 
-            if (match_check == CHECK_SIZE)
+            if (match_check == EOF_SIZE)
             {
-                *(point + 1 - CHECK_SIZE) = '\0';
+                *(point + 1 - EOF_SIZE) = '\0';
                 return (strlen(buffer)) ;
             }
         } 
