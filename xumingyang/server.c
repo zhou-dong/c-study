@@ -175,8 +175,8 @@ void no_found_header(int socket_fd)
 
 void page_content(int socket_fd, FILE *fp)
 {
-    char content[1500] ;
-    fread(content,1,1500,fp);
+    char content[1000] ;
+    fread(content,1,1000,fp);
     send(socket_fd, content, strlen(content), 0); 
     fclose(fp);
     fp=NULL;
