@@ -130,7 +130,7 @@ char * fType(char * fileName){
         type="text/plain";
     else
         type="application/octet-stream";
-    return type;
+     return type;
 }
 
 // build response header
