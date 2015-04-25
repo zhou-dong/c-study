@@ -24,15 +24,22 @@
 #define CHECK "\r\n"
 #define CHECK_SIZE 2
 
+
+struct message {
+    int socket_connection;
+    struct sockaddr * client_address;
+    socklen_t *client_length;
+} ;
+
 int main(int argc, char *argv[]) {
 
     void error(const char *msg) ;
-    void connection(int socket_connection) ; 
+    void thread_execute(struct message *m) ;
+    int connection(int socket_connection) ; 
     struct sockaddr_in serve_address, client_address ;
     socklen_t client_length ;
     int socket_connection ;
     int port_number = 8080 ;
-    int new_socket_connection ;
     int pid ;
     printf("begin to start server\n") ;
 
@@ -52,29 +59,34 @@ int main(int argc, char *argv[]) {
     client_length = sizeof(client_address);
 
     while (1) {
-        new_socket_connection = accept(socket_connection, (struct sockaddr *) &client_address, &client_length);
-        if (new_socket_connection < 0)
-            error("faild on accept");
-        pid = fork();
-        if (pid < 0)
-            error("fail on fork");
-        if (pid == 0) {
-            close(socket_connection);
-            pthread_t thread ;
-            int r = pthread_create(&thread, NULL, (void *)&connection,  (void *) (int)new_socket_connection);
-            printf("%d\n", r) ;
-            int t = pthread_join(thread, new_socket_connection) ;
-            printf ("%d\n", t) ;
-            exit(0);
-        } else
-            close(new_socket_connection) ;
+        pthread_t thread ;
+        struct message m = { } ;
+        int r = pthread_create(&thread, NULL, (void *)&connection,  (void *) &m);
+       // int t = pthread_join(thread, new_socket_connection) ;
     }
 
     close(socket_connection);
     return 0;
 }
 
-void connection(int socket_connection) {
+void thread_execute(struct message *m){
+    int connection(int socket_connection) ;
+    void error(const char *msg) ;
+    int new_socket_connection = accept(m->socket_connection, (struct sockaddr *) m->client_address, m->client_length);
+    if (new_socket_connection < 0)
+        error("faild on accept");
+    int pid = fork();
+    if (pid < 0)
+        error("fail on fork");
+    if (pid == 0) {
+        close(m->socket_connection);
+        connection(new_socket_connection);
+        exit(0);
+    } else
+        close(new_socket_connection) ;
+}
+
+int connection(int socket_connection) {
     int get_request(int fd, char *buffer) ;
     void send_error(int socket_connection) ;
     void send_ok(int socket_connection) ;
@@ -96,8 +108,7 @@ void connection(int socket_connection) {
             FILE *fp = fopen("index.html","r") ;
             send_ok(socket_connection) ;
             send_page(socket_connection, fp) ;
-            return ;
-    //        return 1;
+            return 1;
         }
         int len = strlen(ptr) ;
         char tmp[strlen(ptr)];
@@ -111,8 +122,7 @@ void connection(int socket_connection) {
             send_ok(socket_connection) ;
         send_page(socket_connection, fp) ;
     }
-    return ;
-    //return 1;
+    return 1;
 }
 
 void send_ok(int socket_connection){
