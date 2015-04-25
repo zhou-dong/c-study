@@ -1,161 +1,141 @@
-/*
- */
-
-#include <pthread.h>
+/* A simple server in the internet domain using TCP
+   The port number is passed as an argument */
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
+#include <unistd.h>
+#include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <fcntl.h>
-#include <errno.h>
-
-#define THREAD_SIZE 5
-#define CHECK "\r\n"
-#define CHECK_SIZE 2
-
-struct message {
-    int socket_connection;
-} ;
-
-int main(int argc, char *argv[]) {
-
-    void error(const char *msg) ;
-    void thread_execute(struct message *m) ;
-    int connection(int socket_connection) ; 
-    struct sockaddr_in serve_address, client_address ;
-    socklen_t client_length ;
-    int socket_connection ;
-    int port_number = 8080 ;
-    printf("begin to start server\n") ;
-
-    socket_connection = socket(AF_INET, SOCK_STREAM, 0);
-    if(socket_connection < 0)
-        error("open socket faild");
-    printf("creat socket finish\n") ;
-
-    serve_address.sin_family = AF_INET;
-    serve_address.sin_addr.s_addr = INADDR_ANY;
-    serve_address.sin_port = htons(port_number);
-    if (bind(socket_connection, (struct sockaddr *) &serve_address, sizeof(serve_address)) < 0)
-        error("fail on bind socket") ;
-    printf("bind socked fnish\n") ;
-
-    listen(socket_connection,5);
-    client_length = sizeof(client_address);
-
-    while (1) {
-        pthread_t thread ;
-        struct message m = { .socket_connection = socket_connection } ;
-        pthread_create(&thread, NULL, (void *)&thread_execute,  (void *) &m);
-    }
-
-    close(socket_connection);
-    return 0;
-}
-
-void thread_execute(struct message *m){
-    struct sockaddr_in client_address ;
-    socklen_t client_length ;
-    client_length = sizeof(client_address);
-    int connection(int socket_connection) ;
-    void error(const char *msg) ;
-    int new_socket_connection = accept(m->socket_connection, (struct sockaddr *) &client_address, &client_length);
-    if (new_socket_connection < 0)
-        error("faild on accept");
-    int pid = fork();
-    if (pid < 0)
-        error("fail on fork");
-    if (pid == 0) {
-        close(m->socket_connection);
-        connection(new_socket_connection);
-        exit(0);
-    } else
-        close(new_socket_connection) ;
-    pthread_exit(NULL);
-}
-
-int connection(int socket_connection) {
-    int get_request(int fd, char *buffer) ;
-    void send_error(int socket_connection) ;
-    void send_ok(int socket_connection) ;
-    void send_page(int socket_connection, FILE *fp); 
-    char request[500], *ptr, result[1000];
-    int file, length;
-    if (get_request(socket_connection, request) == 0)
-        printf("received failed\n");
-    printf("%s\n", request);
-    ptr = strstr(request, " HTTP/");
-    if (ptr == NULL) 
-        printf("Hey we git an not HTTP request!\n");
-    else {
-        *ptr = 0;
-        ptr = NULL;
-        if (strncmp(request, "GET ", 4) == 0) 
-            ptr = request + 4;
-        if (ptr[strlen(ptr) - 1] == '/'){
-            FILE *fp = fopen("index.html","r") ;
-            send_ok(socket_connection) ;
-            send_page(socket_connection, fp) ;
-            return 1;
-        }
-        int len = strlen(ptr) ;
-        char tmp[strlen(ptr)];
-        strncpy(tmp,&ptr[1],len-1) ;
-        tmp[strlen(ptr)-1] = '\0' ;
-        FILE *fp = fopen(tmp,"r") ;
-        if (fp==NULL) {
-            fp = fopen("404.html","r");
-            send_error(socket_connection);
-        } else
-            send_ok(socket_connection) ;
-        send_page(socket_connection, fp) ;
-    }
-    return 1;
-}
-
-void send_ok(int socket_connection){
-    char *msg1 = "HTTP/1.1 200 OK\r\n" ;
-    char *msg2 = "Server : Web Server with C\r\n\r\n" ;
-    send(socket_connection, msg1, strlen(msg1), 0);
-    send(socket_connection, msg2, strlen(msg2), 0);
-}
-
-void send_error(int socket_connection){
-    char *msg1 = "HTTP/1.1 404 Not Found\r\n" ;
-    char *msg2 = "Server : Web Server with C\r\n\r\n" ;
-    send(socket_connection, msg1, strlen(msg1), 0);
-    send(socket_connection, msg2, strlen(msg2), 0);
-}
-
-void send_page(int socket_connection, FILE *fp){
-    char result[1000] ;
-    fread(result,1,1000,fp);
-    send(socket_connection, result, strlen(result), 0); 
-    fclose(fp);
-    fp=NULL;
-}
-
-int get_request(int fd, char *buffer) {
-    char *point = buffer ;
-    int match_check = 0;
-    while (recv(fd, point, 1, 0) != 0){
-        if (*point == CHECK[match_check]){
-            ++match_check ; 
-            if (match_check == CHECK_SIZE){
-                *(point + 1 - CHECK_SIZE) = '\0';
-                return (strlen(buffer)) ;
-            }
-        } else
-            match_check = 0 ;
-        point ++ ;
-    }
-    return (0) ;
-}
-
-void error(const char *msg) {
+#define MAXCONNECTION 100 // maximum number of simultaneously connection allowed
+const char CONTENTDIR[]="./contentdir" ; // this is the directory where keep all the files for requests
+void error(const char *msg)
+{
     perror(msg);
     exit(1);
 }
+
+void httpWorker(int *);// This function will handle request
+char * fType(char *);
+char * responseHeader(int, char *);// function that builds response header
+int main(int argc, char *argv[])
+{
+     int sockfd, newsockfd, portno;
+     socklen_t clilen;
+     char buffer[256];
+     struct sockaddr_in serv_addr, cli_addr;
+     int n;
+     if (argc < 2) {
+         fprintf(stderr,"ERROR, no port provided\n");
+         exit(1);
+     }
+     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+     if (sockfd < 0) 
+        error("ERROR opening socket");
+     bzero((char *) &serv_addr, sizeof(serv_addr));
+     portno = atoi(argv[1]);
+     serv_addr.sin_family = AF_INET;
+     serv_addr.sin_addr.s_addr = INADDR_ANY;
+     serv_addr.sin_port = htons(portno);
+     if (bind(sockfd, (struct sockaddr *) &serv_addr,
+              sizeof(serv_addr)) < 0) 
+              error("ERROR on binding");
+     listen(sockfd,MAXCONNECTION);
+    while(1){
+     clilen = sizeof(cli_addr);
+     newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+     if (newsockfd < 0) error("ERROR on accept");
+    httpWorker(&newsockfd);//worker to fulfillthe request
+    }
+ 
+    close(sockfd);
+     return 0; 
+}
+
+void httpWorker(int *sockfd){//sockfd contains all the information
+    int newsockfd = *sockfd;// create a local variable for sockfd 
+    char buffer[256];// we will read the data in this buffer
+    char *token;// local variable to split the request to get the filename 
+    bzero(buffer,256);// intialize the buffer data to zero
+    char fileName[50];
+    char homedir[50];
+    char * type;
+    strcpy(homedir,CONTENTDIR);// directory where files are stored.
+    char *respHeader; //response header
+    // start reading the message from incoming conenction
+     if (read(newsockfd,buffer,255) < 0) error("ERROR reading from socket");
+     //get the requested file part of the request
+     token = strtok(buffer, " ");// split string into token seperated by " "
+     token = strtok(NULL, " ");// in this go we read the file name that needs to be sent
+     strcpy(fileName,token);
+     
+    // get the complete filename 
+    if(strcmp(fileName,"/")==0) // if filename is not provided then we will send index.html
+        strcpy(fileName,strcat(homedir,"/index.html"));
+    else
+        strcpy(fileName,strcat(homedir,fileName));    
+     type = fType(fileName);// get file type
+    //open file and ready to send 
+    FILE *fp;
+    int file_exist=1;
+    fp=fopen(fileName, "r"); 
+    if (fp==NULL) file_exist=0; 
+    respHeader = responseHeader(file_exist,type);
+    if ((send(newsockfd, respHeader,strlen(respHeader), 0) == -1) || (send(newsockfd,"\r\n", strlen("\r\n"), 0) == -1))
+                        perror("Failed to send bytes to client");   
+
+    free(respHeader);// free the allocated memory (note: the memory is allocated in responseheader function)
+
+    if (file_exist){
+       char filechar[1];
+       while((filechar[0]=fgetc(fp))!=EOF){    
+         if(send(newsockfd,filechar,sizeof(char),0) == -1) perror("Failed to send bytes to client");       
+       } 
+   }
+  else{
+       if (send(newsockfd,"<html> <HEAD><TITLE>404 Not Found</TITLE></HEAD><BODY>Not Found</BODY></html> \r\n", 100, 0) == -1)
+          perror("Failed to send bytes to client");          
+      }
+
+     close(newsockfd);
+}
+
+
+// function below find the file type of the file requested
+char * fType(char * fileName){
+     char * type; 
+      char * filetype = strrchr(fileName,'.');// This returns a pointer to the first occurrence of some character in the string 
+      if((strcmp(filetype,".htm"))==0 || (strcmp(filetype,".html"))==0)
+            type="text/html";
+      else if((strcmp(filetype,".jpg"))==0)
+            type="image/jpeg";
+      else if(strcmp(filetype,".gif")==0)
+            type="image/gif";
+      else if(strcmp(filetype,".txt")==0)
+            type="text/plain";
+      else
+            type="application/octet-stream";
+     
+return type;
+}
+
+//buildresponseheader
+char * responseHeader(int filestatus, char * type){
+   char statuscontent[256] = "HTTP/1.0";
+   if(filestatus==1){
+            strcat(statuscontent," 200 OK\r\n");
+            strcat(statuscontent,"Content-Type: ");
+            strcat(statuscontent,type);
+            strcat(statuscontent,"\r\n");
+        }
+   else {
+            strcat(statuscontent,"404 Not Found\r\n");
+            //send a blank line to indicate the end of the header lines   
+            strcat(statuscontent,"Content-Type: ");
+            strcat(statuscontent,"NONE\r\n");
+        } 
+   char * returnheader =malloc(strlen(statuscontent)+1);
+   strcpy(returnheader,statuscontent);
+   return returnheader;
+}
+
