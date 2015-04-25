@@ -1,12 +1,12 @@
 /*
- * Http webserver
- *
- * 1. C Language
- * 2. Multithread
+ * Multithreaded Http webserver By C language
  *
  * gcc -o webserver webserver.c
  * ./webserver
  *
+ * default page  : index.html
+ * page not found: 404.html
+ * test page     : test.html
  */
 
 #include <pthread.h>
