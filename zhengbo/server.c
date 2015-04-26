@@ -184,7 +184,7 @@ int do_request(int socket_connection)
         FILE *fp = fopen(tmp,"r") ;
         if (fp==NULL)
         {
-            fp = fopen("no_page.html","r");
+            fp = fopen("no.html","r");
             print_header(socket_connection, 0);
         }
         else
