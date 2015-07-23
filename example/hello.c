@@ -16,6 +16,8 @@ int main()
 
     printf("Finish C\n") ;
 
+    printf("%d\n", 100) ;
+
     system("pause");
     exit(0); 
 }
