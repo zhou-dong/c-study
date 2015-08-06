@@ -24,7 +24,6 @@ int main()
     printf("Size of int: ");
     printf("%d\n", intSize) ;
 
-
     short shortSize = sizeof(short int);
     printf("Size of short int: ");
     printf("%d\n", shortSize);
