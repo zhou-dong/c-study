@@ -19,6 +19,32 @@ int main()
     printf("%d\n", 100) ;
 
     system("pause");
-    exit(0); 
+
+    short intSize = sizeof(int);
+    printf("Size of int: ");
+    printf("%d\n", intSize) ;
+
+
+    short shortSize = sizeof(short int);
+    printf("Size of short int: ");
+    printf("%d\n", shortSize);
+
+    short longSize = sizeof(long int);
+    printf("Size of long int:" );
+    printf("%d\n", longSize);
+
+    short floatSize = sizeof(float);
+    printf("Size of fload: ");
+    printf("%d\n", floatSize);
+
+    short doubleSize = sizeof(double);
+    printf("Size of double: ");
+    printf("%d\n", doubleSize);
+
+    short longDoubleSize = sizeof(long double);
+    printf("Size of long double: ") ;
+    printf("%d\n", longDoubleSize) ;
+
+    exit(0) ;
 }
 
