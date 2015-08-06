@@ -45,6 +45,10 @@ int main()
     printf("Size of long double: ") ;
     printf("%d\n", longDoubleSize) ;
 
+    short charSize = sizeof(char);
+    printf("Size of char: ") ;
+    printf("%d\n", charSize) ;
+
     exit(0) ;
 }
 
