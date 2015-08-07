@@ -53,6 +53,7 @@ int main()
     int *a = &address ;
     printf("%p\n", &address) ;
     printf("%p\n", a);
+    printf("%d\n", *&address);
     //exit(0) ;
     return 0 ;
 }
