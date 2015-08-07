@@ -54,6 +54,7 @@ int main()
     printf("%p\n", &address) ;
     printf("%p\n", a);
     printf("%d\n", *&address);
+    printf("%p\n", &a);
     //exit(0) ;
     return 0 ;
 }
