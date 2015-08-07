@@ -48,6 +48,7 @@ int main()
     printf("Size of char: ") ;
     printf("%d\n", charSize) ;
 
-    exit(0) ;
+    //exit(0) ;
+    return 0 ;
 }
 
