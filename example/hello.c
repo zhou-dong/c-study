@@ -48,7 +48,6 @@ int main()
     printf("Size of char: ") ;
     printf("%d\n", charSize) ;
 
-
     int address = 100 ;
     int *a = &address ;
     printf("%p\n", &address) ;
