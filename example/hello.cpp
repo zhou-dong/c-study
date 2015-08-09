@@ -21,6 +21,8 @@ class Rectangle {
 
 } ;
 
+Rectangle::display(){};
+
 int main(){
     
     Rectangle r ;
