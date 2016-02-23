@@ -34,15 +34,13 @@ int shmget(key_t key, size_t size, int shmflg);
 void *shmat(int shm_id, const void *shm_addr, int shmflg);
 ```
 
-**
-
 第一个参数，shm_id是由shmget函数返回的共享内存标识。
 
 第二个参数，shm_addr指定共享内存连接到当前进程中的地址位置，通常为空，表示让系统来选择共享内存的地址。
 
 第三个参数，shm_flg是一组标志位，通常为0。
 
-调用成功时返回一个指向共享内存第一个字节的指针，如果调用失败返回-1.
+*调用成功时返回一个指向共享内存第一个字节的指针，如果调用失败返回-1.*
 
 ### 3.shmdt函数
 
@@ -52,8 +50,7 @@ void *shmat(int shm_id, const void *shm_addr, int shmflg);
 int shmdt(const void *shmaddr);  
 ```
 
-参数shmaddr是shmat函数返回的地址指针，调用成功时返回0，失败时返回-1.
-
+参数shmaddr是shmat函数返回的地址指针，*调用成功时返回0，失败时返回-1*.
 
 ### 4 shmctl函数
 
