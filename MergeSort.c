@@ -2,6 +2,12 @@
 #include<stdlib.h>
 #include<stdio.h>
 
+
+/*
+add share memory 
+*/
+
+
 /* Function to merge the two haves arr[l..m] and arr[m+1..r] of array arr[] */
 void merge(int arr[], int l, int m, int r)
 {
