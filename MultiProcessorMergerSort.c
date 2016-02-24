@@ -6,7 +6,6 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
-
  
  #define BUFFER_SIZE 2048
  char arr[] = {12,11,13,5,6,7};

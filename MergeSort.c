@@ -1,17 +1,15 @@
 /* C program for merge sort */
-#include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
-/*
-add share memory
-*/
-
 
 /* Function to merge the two haves arr[l..m] and arr[m+1..r] of array arr[] */
-void merge(int arr[], int l, int m, int r)
+void merge(int arr[], int l, int m, int r, int shmid)
 {
     int i, j, k;
     int n1 = m - l + 1;
@@ -64,14 +62,14 @@ void merge(int arr[], int l, int m, int r)
 
 /* l is for left index and r is right index of the sub-array
  of arr to be sorted */
-void mergeSort(int arr[], int l, int r)
+void mergeSort(int arr[], int l, int r, int shmid)
 {
     if (l < r)
     {
         int m = l+(r-l)/2; //Same as (l+r)/2, but avoids overflow for large l and h
-        mergeSort(arr, l, m);
-        mergeSort(arr, m+1, r);
-        merge(arr, l, m, r);
+        mergeSort(arr, l, m, shmid);
+        mergeSort(arr, m+1, r, shmid);
+        merge(arr, l, m, r, shmid);
     }
 }
 
@@ -97,11 +95,6 @@ int main()
     printf("Given array is \n");
     printArray(arr, arr_size);
     
-    mergeSort(arr, 0, arr_size - 1);
-    
-    printf("\nSorted array is \n");
-    printArray(arr, arr_size);
-    
     /*Implment with shared memory*/
     
     //创建共享内存
@@ -119,10 +112,30 @@ int main()
         fprintf(stderr, "shmat failed\n");
         exit(EXIT_FAILURE);
     }
+    
+    pid_t pid;
+    if((pid=fork())<0)
+    {
+        perror("fork");
+        exit(1);
+    }
+    
+    if (pid ==0) // child process
+    {
+        printf("child process: [%d]\n", pid) ;
+    }
+    else //Parent process
+    {
+        printf("parent process: [%d]\n", pid) ;
+    }
+    
     printf("%d\n", shmid);
     
+    mergeSort(arr, 0, arr_size - 1, shmid);
     
-    
+    printf("\nSorted array is \n");
+    printArray(arr, arr_size);
+
     
     return 0;
 }
