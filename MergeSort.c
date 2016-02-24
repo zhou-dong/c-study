@@ -7,10 +7,23 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
+#define ARRAY_SIZE 6
+
+struct shared_use_st
+{
+    int index  ;
+    int arr_size ;
+    int arr[ARRAY_SIZE] ;
+};
 
 /* Function to merge the two haves arr[l..m] and arr[m+1..r] of array arr[] */
-void merge(int arr[], int l, int m, int r, int shmid)
+void merge(int l, int m, int r, int shmid, struct shared_use_st *shared)
 {
+    int *arr = shared->arr;
+    
+    
+    printf("begin index: [%d]\n", shared->index);
+    
     int i, j, k;
     int n1 = m - l + 1;
     int n2 = r - m;
@@ -58,18 +71,115 @@ void merge(int arr[], int l, int m, int r, int shmid)
         j++;
         k++;
     }
+    
+    shared->index-- ;
+    
+    printf("end index: [%d]\n", shared->index);
+
 }
 
 /* l is for left index and r is right index of the sub-array
  of arr to be sorted */
-void mergeSort(int arr[], int l, int r, int shmid)
+void mergeSort(int l, int r, int shmid)
 {
     if (l < r)
     {
+        
         int m = l+(r-l)/2; //Same as (l+r)/2, but avoids overflow for large l and h
-        mergeSort(arr, l, m, shmid);
-        mergeSort(arr, m+1, r, shmid);
-        merge(arr, l, m, r, shmid);
+        pid_t pid;
+        pid_t pid2;
+        
+        void *shm = NULL;
+        struct shared_use_st *shared = NULL;
+        int index ;
+        if((pid=fork())<0)
+        {
+            perror("fork1");
+            exit(1);
+        }
+        if((pid2=fork())<0)
+        {
+            perror("fork2") ;
+            exit(1);
+        }
+        if (pid==0) // child process
+        {
+            //将共享内存连接到当前进程的地址空间
+            shm = shmat(shmid, (void*)0, 0);
+            if(shm == (void*)-1)
+            {
+                fprintf(stderr, "shmat failed in begin merge0\n");
+                exit(EXIT_FAILURE);
+            }
+            printf("Memory attached at %X\n", (int)shm);
+            
+            shared = (struct shared_use_st*)shm;
+            
+            printf("child process1: [%d]\n", pid) ;
+            index = shared->index;
+            
+            shared->index++ ;
+            mergeSort(l, m, shmid);
+            merge(l, m, r, shmid, shared);
+            while (shared->index!=index) {
+                sleep(1) ;
+            }
+            //把共享内存从当前进程中分离
+            if(shmdt(shm) == -1)
+            {
+                fprintf(stderr, "shmdt failed\n");
+                exit(EXIT_FAILURE);
+            }
+            //删除共享内存
+            if(shmctl(shmid, IPC_RMID, 0) == -1)
+            {
+                //fprintf(stderr, "shmctl(IPC_RMID) failed\n");
+                exit(EXIT_FAILURE);
+            }
+            //exit(EXIT_SUCCESS);
+
+        }
+        if(pid2==0){
+            
+            //将共享内存连接到当前进程的地址空间
+            shm = shmat(shmid, (void*)0, 0);
+            if(shm == (void*)-1)
+            {
+                //fprintf(stderr, "shmat failed in begin merge1\n");
+                exit(EXIT_FAILURE);
+            }
+            printf("Memory attached at %X\n", (int)shm);
+            
+            shared = (struct shared_use_st*)shm;
+            
+            printf("child process2: [%d]\n", pid2) ;
+            index = shared->index;
+            
+            shared->index++ ;
+            mergeSort(m+1, r, shmid);
+            merge(l, m, r, shmid, shared);
+            while (shared->index!=index) {
+                sleep(1) ;
+            }
+            //把共享内存从当前进程中分离
+            if(shmdt(shm) == -1)
+            {
+                fprintf(stderr, "shmdt failed\n");
+                exit(EXIT_FAILURE);
+            }
+            //删除共享内存
+            if(shmctl(shmid, IPC_RMID, 0) == -1)
+            {
+                fprintf(stderr, "shmctl(IPC_RMID) failed\n");
+                exit(EXIT_FAILURE);
+            }
+            //exit(EXIT_SUCCESS);
+
+        }
+        else //Parent process
+        {
+            //printf("parent process: [%d]\n", pid) ;
+        }
     }
 }
 
@@ -84,8 +194,6 @@ void printArray(int A[], int size)
     printf("\n");
 }
 
- #define BUFFER_SIZE 2048
-
 /* Driver program to test above functions */
 int main()
 {
@@ -98,7 +206,7 @@ int main()
     /*Implment with shared memory*/
     
     //创建共享内存
-    int shmid = shmget((key_t)1234, BUFFER_SIZE, 0666|IPC_CREAT);
+    int shmid = shmget((key_t)1234, sizeof(struct shared_use_st), 0666|IPC_CREAT);
     if(shmid == -1)
     {
         fprintf(stderr, "shmget failed\n");
@@ -113,28 +221,23 @@ int main()
         exit(EXIT_FAILURE);
     }
     
-    pid_t pid;
-    if((pid=fork())<0)
-    {
-        perror("fork");
-        exit(1);
+    struct shared_use_st *shared = NULL;
+    shared = (struct shared_use_st*)shm;
+    
+    // init structure
+    shared->index = 0;
+    for (int i=0; i<ARRAY_SIZE; i++) {
+        shared->arr[i] = arr[i] ;
     }
     
-    if (pid ==0) // child process
-    {
-        printf("child process: [%d]\n", pid) ;
+    mergeSort(0, arr_size - 1, shmid);
+
+    while (shared->index=>0) {
+        sleep(1) ;
     }
-    else //Parent process
-    {
-        printf("parent process: [%d]\n", pid) ;
-    }
-    
-    printf("%d\n", shmid);
-    
-    mergeSort(arr, 0, arr_size - 1, shmid);
     
     printf("\nSorted array is \n");
-    printArray(arr, arr_size);
+    printArray(shared->arr, arr_size);
 
     
     return 0;
