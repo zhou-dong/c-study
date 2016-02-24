@@ -108,7 +108,7 @@ void mergeSort(int l, int r, int shmid)
             shm = shmat(shmid, (void*)0, 0);
             if(shm == (void*)-1)
             {
-                fprintf(stderr, "shmat failed in begin merge0\n");
+                //fprintf(stderr, "shmat failed in begin merge0\n");
                 exit(EXIT_FAILURE);
             }
             printf("Memory attached at %X\n", (int)shm);
@@ -232,7 +232,7 @@ int main()
     
     mergeSort(0, arr_size - 1, shmid);
 
-    while (shared->index=>0) {
+    while (shared->index!=-1) {
         sleep(1) ;
     }
     
