@@ -86,6 +86,8 @@ void printArray(int A[], int size)
     printf("\n");
 }
 
+ #define BUFFER_SIZE 2048
+
 /* Driver program to test above functions */
 int main()
 {
@@ -99,5 +101,28 @@ int main()
     
     printf("\nSorted array is \n");
     printArray(arr, arr_size);
+    
+    /*Implment with shared memory*/
+    
+    //创建共享内存
+    int shmid = shmget((key_t)1234, BUFFER_SIZE, 0666|IPC_CREAT);
+    if(shmid == -1)
+    {
+        fprintf(stderr, "shmget failed\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    void *shm = NULL; //分配的共享内存的原始首地址
+    shm = shmat(shmid, 0, 0);
+    if(shm == (void*)-1)
+    {
+        fprintf(stderr, "shmat failed\n");
+        exit(EXIT_FAILURE);
+    }
+    printf("%d\n", shmid);
+    
+    
+    
+    
     return 0;
 }
