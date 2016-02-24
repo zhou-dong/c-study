@@ -232,7 +232,7 @@ int main()
     
     mergeSort(0, arr_size - 1, shmid);
 
-    while (shared->index!=-1) {
+    while (shared->index>-1) {
         sleep(1) ;
     }
     
