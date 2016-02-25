@@ -170,7 +170,7 @@ void mergeSort(int l, int r, int shmid)
             //删除共享内存
             if(shmctl(shmid, IPC_RMID, 0) == -1)
             {
-                fprintf(stderr, "shmctl(IPC_RMID) failed\n");
+                //fprintf(stderr, "shmctl(IPC_RMID) failed\n");
                 exit(EXIT_FAILURE);
             }
             //exit(EXIT_SUCCESS);
