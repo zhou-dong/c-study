@@ -97,11 +97,6 @@ void mergeSort(int l, int r, int shmid)
             perror("fork1");
             exit(1);
         }
-        if((pid2=fork())<0)
-        {
-            perror("fork2") ;
-            exit(1);
-        }
         if (pid==0) // child process
         {
             //将共享内存连接到当前进程的地址空间
@@ -138,6 +133,11 @@ void mergeSort(int l, int r, int shmid)
             }
             //exit(EXIT_SUCCESS);
 
+        }
+        if((pid2=fork())<0)
+        {
+            perror("fork2") ;
+            exit(1);
         }
         if(pid2==0){
             
