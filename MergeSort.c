@@ -133,14 +133,7 @@ void mergeSort(int l, int r, int shmid)
             }
             //exit(EXIT_SUCCESS);
 
-        }
-        if((pid2=fork())<0)
-        {
-            perror("fork2") ;
-            exit(1);
-        }
-        if(pid2==0){
-            
+        } else {
             //将共享内存连接到当前进程的地址空间
             shm = shmat(shmid, (void*)0, 0);
             if(shm == (void*)-1)
@@ -175,10 +168,6 @@ void mergeSort(int l, int r, int shmid)
             }
             //exit(EXIT_SUCCESS);
 
-        }
-        else //Parent process
-        {
-            //printf("parent process: [%d]\n", pid) ;
         }
     }
 }
@@ -231,11 +220,12 @@ int main()
     }
     
     mergeSort(0, arr_size - 1, shmid);
-
-    while (shared->index>-1) {
+    
+    while (shared->index>0) {
         sleep(1) ;
     }
-    
+
+    printf("%d",1) ;
     printf("\nSorted array is \n");
     printArray(shared->arr, arr_size);
 
