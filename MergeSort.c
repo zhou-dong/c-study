@@ -89,9 +89,12 @@ void mergeSort(int l, int r, int shmid)
         pid_t pid;
         pid_t pid2;
         
-        void *shm = NULL;
-        struct shared_use_st *shared = NULL;
-        int index ;
+        void *shm1 = NULL;
+        void *shm2 = NULL;
+        struct shared_use_st *shared1 = NULL;
+        struct shared_use_st *shared2 = NULL;
+        int index1 ;
+        int index2 ;
         if((pid=fork())<0)
         {
             perror("fork1");
@@ -100,27 +103,27 @@ void mergeSort(int l, int r, int shmid)
         if (pid==0) // child process
         {
             //将共享内存连接到当前进程的地址空间
-            shm = shmat(shmid, (void*)0, 0);
-            if(shm == (void*)-1)
+            shm1 = shmat(shmid, (void*)0, 0);
+            if(shm1== (void*)-1)
             {
                 //fprintf(stderr, "shmat failed in begin merge0\n");
                 exit(EXIT_FAILURE);
             }
-            printf("Memory attached at %X\n", (int)shm);
+            printf("Memory attached at %X\n", (int)shm1);
             
-            shared = (struct shared_use_st*)shm;
+            shared1 = (struct shared_use_st*)shm1;
             
             printf("child process1: [%d]\n", pid) ;
-            index = shared->index;
+            index1 = shared1->index;
             
-            shared->index++ ;
+            shared1->index++ ;
             mergeSort(l, m, shmid);
-            merge(l, m, r, shmid, shared);
-            while (shared->index!=index) {
+            merge(l, m, r, shmid, shared1);
+            while (shared1->index!=index1) {
                 sleep(1) ;
             }
             //把共享内存从当前进程中分离
-            if(shmdt(shm) == -1)
+            if(shmdt(shm1) == -1)
             {
                 fprintf(stderr, "shmdt failed\n");
                 exit(EXIT_FAILURE);
@@ -142,27 +145,27 @@ void mergeSort(int l, int r, int shmid)
         if(pid2==0){
             
             //将共享内存连接到当前进程的地址空间
-            shm = shmat(shmid, (void*)0, 0);
-            if(shm == (void*)-1)
+            shm2 = shmat(shmid, (void*)0, 0);
+            if(shm2 == (void*)-1)
             {
                 //fprintf(stderr, "shmat failed in begin merge1\n");
                 exit(EXIT_FAILURE);
             }
-            printf("Memory attached at %X\n", (int)shm);
+            printf("Memory attached at %X\n", (int)shm2);
             
-            shared = (struct shared_use_st*)shm;
+            shared2 = (struct shared_use_st*)shm2;
             
             printf("child process2: [%d]\n", pid2) ;
-            index = shared->index;
+            index2 = shared2->index;
             
-            shared->index++ ;
+            shared2->index++ ;
             mergeSort(m+1, r, shmid);
-            merge(l, m, r, shmid, shared);
-            while (shared->index!=index) {
+            merge(l, m, r, shmid, shared2);
+            while (shared2->index!=index2) {
                 sleep(1) ;
             }
             //把共享内存从当前进程中分离
-            if(shmdt(shm) == -1)
+            if(shmdt(shm2) == -1)
             {
                 fprintf(stderr, "shmdt failed\n");
                 exit(EXIT_FAILURE);
